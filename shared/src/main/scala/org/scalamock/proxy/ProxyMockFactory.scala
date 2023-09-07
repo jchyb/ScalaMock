@@ -37,7 +37,7 @@ trait ProxyMockFactory {
     val classLoader = Thread.currentThread.getContextClassLoader
     val interfaces = Array[Class[_]](classTag[T].runtimeClass, classTag[F].runtimeClass)
     try {
-      JavaProxy.newProxyInstance(classLoader, interfaces, handler).asInstanceOf[T with F]
+      JavaProxy.newProxyInstance(classLoader, interfaces, handler).asInstanceOf[T with F with scala.reflect.Selectable]
     } catch {
       case e: IllegalArgumentException => 
         throw new IllegalArgumentException("Unable to create proxy - possible classloader issue?", e)

@@ -62,10 +62,10 @@ class ReallySimpleExampleTest extends AnyFunSuite with MockFactory {
     }
 
     // argAssert fails early
-    (formatter.format _).expects(argAssert(assertTeamNatsu _)).onCall { s: String => s"Yo $s" }.once()
+    (formatter.format _).expects(argAssert(assertTeamNatsu _)).onCall { (s: String) => s"Yo $s" }.once()
 
     // 'where' verifies at the end of the test
-    (formatter.format _).expects(where { s: String => teamNatsu contains(s) }).onCall { s: String => s"Yo $s" }.twice()
+    (formatter.format _).expects(where { (s: String) => teamNatsu contains(s) }).onCall { (s: String) => s"Yo $s" }.twice()
 
     Greetings.sayHello("Carla", formatter)
     Greetings.sayHello("Happy", formatter)
