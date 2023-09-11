@@ -6,7 +6,7 @@ lazy val scalatest = Def.setting("org.scalatest" %%% "scalatest" % "3.2.16")
 lazy val specs2 = Def.setting("org.specs2" %%% "specs2-core" % "4.20.2")
 
 val commonSettings = Defaults.coreDefaultSettings ++ Seq(
-  scalaVersion := "3.3.0",
+  scalaVersion := "3.3.1",
   scalacOptions ++= Seq("-deprecation", "-unchecked", "-feature", "-release:8")
 )
 
@@ -48,9 +48,17 @@ def crossScalaSettings = {
       }
     }
   Seq(
-    crossScalaVersions := Seq("2.12.17", "2.13.11", scalaVersion.value),
+    crossScalaVersions := Seq("2.13.11", scalaVersion.value),
     Compile / unmanagedSourceDirectories ++= addDirsByScalaVersion("src/main").value,
     Test / unmanagedSourceDirectories ++= addDirsByScalaVersion("src/test").value,
+    scalacOptions ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 13)) =>
+          Seq("-Ytasty-reader")
+        case _ =>
+          Seq.empty
+      }
+    },
     libraryDependencies ++= {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, _)) =>

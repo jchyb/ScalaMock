@@ -47,7 +47,7 @@ class ReallySimpleExampleTest extends AnyFunSuite with MockFactory {
   test("WithVariableParameters") {
     val australianFormat = mock[Formatter]
 
-    (australianFormat.format _).expects(*).onCall { s: String => s"G'day $s" }.twice()
+    (australianFormat.format _).expects(*).onCall { (s: String) => s"G'day $s" }.twice()
 
     Greetings.sayHello("Wendy", australianFormat)
     Greetings.sayHello("Gray", australianFormat)
