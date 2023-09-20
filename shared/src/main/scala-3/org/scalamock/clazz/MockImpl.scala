@@ -30,20 +30,18 @@ import MockFunctionFinder.findMockFunction
 import scala.annotation.experimental
 import scala.reflect.Selectable
 
+@experimental
 object MockImpl:
-  @experimental
+
   def mock[T: Type](mockContext: Expr[MockContext])(using quotes: Quotes): Expr[T & Selectable] =
     Mocked[T](mockName = None).instance(MockType.Mock, mockContext)
 
-  @experimental
   def stub[T: Type](mockContext: Expr[MockContext])(using quotes: Quotes): Expr[T & Selectable] =
     Mocked[T](mockName = None).instance(MockType.Stub, mockContext)
 
-  @experimental
   def mockWithName[T: Type](mockName: Expr[String])(mockContext: Expr[MockContext])(using quotes: Quotes): Expr[T & Selectable] =
     Mocked[T](mockName = Some(mockName)).instance(MockType.Mock, mockContext)
 
-  @experimental
   def stubWithName[T: Type](mockName: Expr[String])(mockContext: Expr[MockContext])(using quotes: Quotes): Expr[T & Selectable] =
     Mocked[T](mockName = Some(mockName)).instance(MockType.Stub, mockContext)
 

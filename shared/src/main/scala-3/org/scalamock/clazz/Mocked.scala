@@ -27,6 +27,7 @@ import scala.annotation.experimental
 import scala.quoted.*
 import scala.reflect.Selectable
 
+@experimental
 class Mocked[T: Type](
   mockName: Option[Expr[String]]
 )(using
@@ -43,7 +44,7 @@ class Mocked[T: Type](
       |${methods.map(_.typ).mkString("\n")}
       |""".stripMargin)*/
 
-  @experimental def instance(mockType: MockType, ctx: Expr[MockContext]): Expr[T & Selectable] =
+  def instance(mockType: MockType, ctx: Expr[MockContext]): Expr[T & Selectable] =
     val symbol: Symbol = Symbol.newClass(
       parent = Symbol.spliceOwner,
       name = "$anon",
@@ -79,10 +80,35 @@ object Mocked:
   class Utils(using val quotes: Quotes):
     import quotes.reflect.*
 
-    case class MockedMethod(idx: Int, symbol: Symbol, typ: LambdaType):
+    case class MockedMethod(idx: Int, symbol: Symbol, typ: TypeRepr):
       val mockValName = "mock$" + symbol.name + "$" + idx
-      val types = (typ.paramTypes :+ typ.resType).map(tpe => TypeTree.ref(tpe.typeSymbol))
+      val paramTypes = typ.widen match
+        case lambda: LambdaType => lambda.paramTypes
+        case _ => List()
+      
+      def collectParams(typeTree: TypeRepr): List[TypeRepr] = typeTree match
+        case PolyType(typeNames, bounds, res) =>
+          collectParams(res)
+        case MethodType(argNames, argTypes, res) =>
+          argTypes ++ collectParams(res)
+        case other => List(other)
+      
+      val types0 = collectParams(typ.widen)
 
+      def mapTypeRefWithAny(typeRepr: TypeRepr): TypeRepr = // TODO replace with regular type parameters in val
+        typeRepr match
+          case ParamRef(bindings, idx) =>
+            TypeRepr.of[Any]
+          case AppliedType(tycon, args) =>
+            tycon.appliedTo(args.map(mapTypeRefWithAny(_)))
+          case _ => typeRepr
+      
+      val types = types0.map { typeRepr =>
+        val adjusted = mapTypeRefWithAny(typeRepr.widen)
+        adjusted.asType match
+          case '[t] => TypeTree.of[t]
+      }
+      
       def uniqueName(classSymbol: Symbol): Expr[String] =
         '{
           Predef.augmentString("<%s> %s%s.%s%s")
@@ -91,7 +117,7 @@ object Mocked:
               ${Expr(classSymbol.name)},
               ${Expr("")},
               ${Expr(symbol.name)},
-              ${Expr(typ.paramTypes.map(_.show).mkString(","))}
+              ${Expr(paramTypes.map(_.show).mkString(","))}
             )
         }
 
@@ -122,9 +148,6 @@ object Mocked:
           symbol = valSym,
           rhs = Some {
             val mockFunctionUniqueName = '{ scala.Symbol(${ uniqueName(classSymbol) }) }
-            val defaultable = typ.resType.asType match
-              case '[r] => '{ scala.compiletime.summonInline[Defaultable[r]] }.asTerm
-            Apply(
               Apply(
                 TypeApply(
                   Select(
@@ -134,19 +157,41 @@ object Mocked:
                   types
                 ),
                 List(ctx.asTerm, mockFunctionUniqueName.asTerm)
-              ),
-              List(defaultable)
-            )
+              )
           }
         )
 
         val defDef = DefDef(
           methodSym,
           { args =>
+            def mapParamRefs(baseBindings: TypeRepr, typeRepr: TypeRepr): TypeRepr = typeRepr match
+              case pr @ ParamRef(bindings, idx) =>
+                if bindings == baseBindings then
+                  args(0)(idx).asInstanceOf[TypeTree].tpe
+                else pr
+              case AppliedType(tycon, args) =>
+                AppliedType(tycon, args.map(arg => mapParamRefs(baseBindings, arg)))
+              case other => other
+            
+            val finalResType = typ match
+              case pt: PolyType => mapParamRefs(pt, types0.last)
+              case _ => types0.last
+            
             Some(
-              Apply(
-                Select.unique(Ref(valDef.symbol), "apply"),
-                args.flatten.collect { case t: Term => t }
+              TypeApply( // TODO remove and replace with vals with Type params
+                Select.unique(
+                  Apply(
+                    Select.unique(Ref(valDef.symbol), "apply"),
+                    args.flatten.collect { case t: Term => TypeApply(
+                      Select.unique(t, "asInstanceOf"),
+                      mapTypeRefWithAny(t.tpe.widen).asType match
+                        case '[t] => List(TypeTree.of[t])
+                    ) }
+                  ),
+                  "asInstanceOf"
+                ),
+                finalResType.asType match
+                  case '[t] => List(TypeTree.of[t])
               )
             )
           }
@@ -158,7 +203,7 @@ object Mocked:
         MockedMethods(tpe)
           .collectFirst { case method: MockedMethod
             if method.symbol.name == name &&
-               method.typ.paramTypes.zip(paramTypes).forall(_ =:= _) => method.mockValName
+               method.paramTypes.zip(paramTypes).forall(_ =:= _) => method.mockValName
           }
           .get
 
@@ -166,4 +211,4 @@ object Mocked:
         (tpe.typeSymbol.methodMembers.toSet -- TypeRepr.of[Object].typeSymbol.methodMembers).toList
           .map(sym => sym -> tpe.memberType(sym))
           .zipWithIndex
-          .collect { case ((sym: Symbol, t: LambdaType), idx: Int) => MockedMethod(idx, sym, t) }
+          .collect { case ((sym: Symbol, t: TypeRepr), idx: Int) => MockedMethod(idx, sym, t) }

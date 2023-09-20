@@ -28,6 +28,7 @@ object MockFunctionFinder:
    * Given something of the structure <|o.m _|> where o is a mock object
    * and m is a method, find the corresponding MockFunction instance
    */
+  @scala.annotation.experimental
   def findMockFunction[F: Type, M: Type](f: Expr[F], actuals: List[Any])(using quotes: Quotes): Expr[M] =
     val utils = new Mocked.Utils
     import utils.{MockedMethods, MockedMethod}

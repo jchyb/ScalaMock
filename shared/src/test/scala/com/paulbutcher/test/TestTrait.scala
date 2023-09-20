@@ -47,7 +47,7 @@ trait TestTrait {
   
   def upperBound[T <: Product](x: T): Int
   def lowerBound[T >: U, U](x: T, y: List[U]): String
-  def contextBound[T: Ordering](x: T, y: T): Boolean
+  // def contextBound[T: Ordering](x: T, y: T): Boolean
   
   def withImplementation(x: Int) = x * x
 
@@ -56,12 +56,12 @@ trait TestTrait {
   def explicitPackageReference(x: yet.another.pkg.YetAnotherClass): yet.another.pkg.YetAnotherClass
   def explicitPackageUpperBound[T <: yet.another.pkg.YetAnotherClass](x: T): T
   
-  var aVar: String
-  var concreteVar = "foo"
+  // var aVar: String
+  // var concreteVar = "foo"
 
-  val aVal: String
+  // val aVal: String
   val concreteVal = "foo"
-  val fnVal: String => Int
+  // val fnVal: String => Int
   
   trait Embedded {
     def m(x: Int, y: Double): String
@@ -75,5 +75,5 @@ trait TestTrait {
   
   trait ATrait
   
-  def referencesEmbedded(): Embedded
+  // def referencesEmbedded(): Embedded
 }
