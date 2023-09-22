@@ -47,7 +47,7 @@ trait TestTrait {
   
   def upperBound[T <: Product](x: T): Int
   def lowerBound[T >: U, U](x: T, y: List[U]): String
-  // def contextBound[T: Ordering](x: T, y: T): Boolean
+  def contextBound[T: Ordering](x: T, y: T): Boolean
   
   def withImplementation(x: Int) = x * x
 

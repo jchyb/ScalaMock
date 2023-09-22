@@ -97,24 +97,24 @@ class MockTest extends AnyFreeSpec with MockFactory with Matchers {
       }
     }
 
-    // "cope with polymorphic methods" in {
-    //   withExpectations {
-    //     val m = mock[TestTrait]
-    //     (m.polymorphic(_: List[Int])).expects(List(1, 2)).returning("called with integers")
-    //     (m.polymorphic(_: List[String])).expects(List("foo", "bar")).returning("called with strings")
-    //     assertResult("called with integers") { m.polymorphic(List(1, 2)) }
-    //     assertResult("called with strings") { m.polymorphic(List("foo", "bar")) }
-    //   }
-    // }
+    "cope with polymorphic methods" in {
+      withExpectations {
+        val m = mock[TestTrait]
+        (m.polymorphic(_: List[Int])).expects(List(1, 2)).returning("called with integers")
+        (m.polymorphic(_: List[String])).expects(List("foo", "bar")).returning("called with strings")
+        assertResult("called with integers") { m.polymorphic(List(1, 2)) }
+        assertResult("called with strings") { m.polymorphic(List("foo", "bar")) }
+      }
+    }
 
-    // "cope with curried polymorphic methods" in {
-    //   withExpectations {
-    //     val m = mock[TestTrait]
-    //     (m.polycurried(_: Int)(_: String)).expects(42, "foo").returning((123, "bar"))
-    //     val partial = m.polycurried(42)(_: String)
-    //     assertResult((123, "bar")) { partial("foo") }
-    //   }
-    // }
+    "cope with curried polymorphic methods" in {
+      withExpectations {
+        val m = mock[TestTrait]
+        (m.polycurried(_: Int)(_: String)).expects(42, "foo").returning((123, "bar"))
+        val partial = m.polycurried(42)(_: String)
+        assertResult((123, "bar")) { partial("foo") }
+      }
+    }
 
     "cope with parameters of polymorphic type" in {
       withExpectations {
@@ -132,24 +132,24 @@ class MockTest extends AnyFreeSpec with MockFactory with Matchers {
     //   }
     // }
 
-    // "cope with methods where Seq[T] is the last parameter" in { // issue #54
-    //   trait ClassWithSeqTParam {
-    //      def run(ints: Seq[Int]) : Int
-    //   }
+    "cope with methods where Seq[T] is the last parameter" in { // issue #54
+      trait ClassWithSeqTParam {
+         def run(ints: Seq[Int]) : Int
+      }
 
-    //   withExpectations {
-    //     val m = mock[ClassWithSeqTParam]
+      withExpectations {
+        val m = mock[ClassWithSeqTParam]
 
-    //     (m.run _).expects(Seq(1, 2, 3)).returning(100)
-    //     assertResult(100) { m.run(Seq(1, 2, 3)) }
+        (m.run _).expects(Seq(1, 2, 3)).returning(100)
+        assertResult(100) { m.run(Seq(1, 2, 3)) }
 
-    //     (m.run _).expects(*).returning(200)
-    //     assertResult(200) { m.run(Seq(5, 55)) }
+        (m.run _).expects(*).returning(200)
+        assertResult(200) { m.run(Seq(5, 55)) }
 
-    //     (m.run _).expects(Seq()).returning(300)
-    //     assertResult(300) { m.run(Seq.empty) }
-    //   }
-    // }
+        (m.run _).expects(Seq()).returning(300)
+        assertResult(300) { m.run(Seq.empty) }
+      }
+    }
 /*
     "cope with methods with by name parameters" in {
       withExpectations {
@@ -170,50 +170,50 @@ class MockTest extends AnyFreeSpec with MockFactory with Matchers {
       }
     }*/
 
-//     "cope with methods with implicit parameters" in {
-//       withExpectations {
-//         implicit val y: Double = 1.23
-//         val m = mock[TestTrait]
-//         (m.implicitParam(_: Int)(_: Double)).expects(42, 1.23).returning("it works")
-//         assertResult("it works") { m.implicitParam(42) }
-//       }
-//     }
+    "cope with methods with implicit parameters" in {
+      withExpectations {
+        implicit val y: Double = 1.23
+        val m = mock[TestTrait]
+        (m.implicitParam(_: Int)(_: Double)).expects(42, 1.23).returning("it works")
+        assertResult("it works") { m.implicitParam(42) }
+      }
+    }
 
-    // "cope with references to another package" in {
-    //   withExpectations {
-    //     val m = mock[TestTrait]
-    //     val x = new SomeOtherClass
-    //     (m.referencesSomeOtherPackage _).expects(x).returning(x)
-    //     assertResult(x) { m.referencesSomeOtherPackage(x) }
-    //   }
-    // }
+    "cope with references to another package" in {
+      withExpectations {
+        val m = mock[TestTrait]
+        val x = new SomeOtherClass
+        (m.referencesSomeOtherPackage _).expects(x).returning(x)
+        assertResult(x) { m.referencesSomeOtherPackage(x) }
+      }
+    }
 
-//     "cope with upper bound in another package" in {
-//       withExpectations {
-//         val m = mock[TestTrait]
-//         val x = new SomeOtherClass
-//         (m.otherPackageUpperBound(_: SomeOtherClass)).expects(x).returning(x)
-//         assertResult(x) { m.otherPackageUpperBound(x) }
-//       }
-//     }
+    "cope with upper bound in another package" in {
+      withExpectations {
+        val m = mock[TestTrait]
+        val x = new SomeOtherClass
+        (m.otherPackageUpperBound(_: SomeOtherClass)).expects(x).returning(x)
+        assertResult(x) { m.otherPackageUpperBound(x) }
+      }
+    }
 
-//     "cope with explicit references to another package" in {
-//       withExpectations {
-//         val m = mock[TestTrait]
-//         val x = new yet.another.pkg.YetAnotherClass
-//         (m.explicitPackageReference _).expects(x).returning(x)
-//         assertResult(x) { m.explicitPackageReference(x) }
-//       }
-//     }
+    "cope with explicit references to another package" in {
+      withExpectations {
+        val m = mock[TestTrait]
+        val x = new yet.another.pkg.YetAnotherClass
+        (m.explicitPackageReference _).expects(x).returning(x)
+        assertResult(x) { m.explicitPackageReference(x) }
+      }
+    }
 
-//     "cope with upper bound in an explictly referenced package" in {
-//       withExpectations {
-//         val m = mock[TestTrait]
-//         val x = new yet.another.pkg.YetAnotherClass
-//         (m.explicitPackageUpperBound(_: yet.another.pkg.YetAnotherClass)).expects(x).returning(x)
-//         assertResult(x) { m.explicitPackageUpperBound(x) }
-//       }
-//     }
+    "cope with upper bound in an explictly referenced package" in {
+      withExpectations {
+        val m = mock[TestTrait]
+        val x = new yet.another.pkg.YetAnotherClass
+        (m.explicitPackageUpperBound(_: yet.another.pkg.YetAnotherClass)).expects(x).returning(x)
+        assertResult(x) { m.explicitPackageUpperBound(x) }
+      }
+    }
 
 //     //! TODO - currently doesn't work because we can't override concrete vars
 //     "cope with a non-abstract var" ignore {
@@ -445,14 +445,14 @@ class MockTest extends AnyFreeSpec with MockFactory with Matchers {
 //     }
 
 //     // TODO: issue 150 - causes a compiler error
-// //    "cope with curried function returning methods" in {
-// //      withExpectations {
-// //        val m = mock[TestTrait]
-// //        (m.curriedFuncReturn(_: Int)(_: Double)).expects(10, 1.23).returning("curried func return method called")
-// //        val partial = m.curriedFuncReturn(10)
-// //        assertResult("curried func return method called") { partial(1.23) }
-// //      }
-// //    }
+//    "cope with curried function returning methods" in {
+//      withExpectations {
+//        val m = mock[TestTrait]
+//        (m.curriedFuncReturn(_: Int)(_: Double)).expects(10, 1.23).returning("curried func return method called")
+//        val partial = m.curriedFuncReturn(10)
+//        assertResult("curried func return method called") { partial(1.23) }
+//      }
+//    }
 
 
     // issue 132

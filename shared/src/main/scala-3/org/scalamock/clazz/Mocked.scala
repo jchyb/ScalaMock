@@ -68,8 +68,6 @@ class Mocked[T: Type](
         body = methods.flatMap(_.implementation(symbol, mockType, ctx))
       )
 
-    //report.info(definition.show)
-
     Block(
       List(definition),
       Typed(Apply(Select(New(TypeIdent(symbol)), symbol.primaryConstructor), Nil), TypeTree.of[T with Selectable])
@@ -82,9 +80,6 @@ object Mocked:
 
     case class MockedMethod(idx: Int, symbol: Symbol, typ: TypeRepr):
       val mockValName = "mock$" + symbol.name + "$" + idx
-      val paramTypes = typ.widen match
-        case lambda: LambdaType => lambda.paramTypes
-        case _ => List()
       
       def collectParams(typeTree: TypeRepr): List[TypeRepr] = typeTree match
         case PolyType(typeNames, bounds, res) =>
@@ -95,20 +90,26 @@ object Mocked:
       
       val types0 = collectParams(typ.widen)
 
-      def mapTypeRefWithAny(typeRepr: TypeRepr): TypeRepr = // TODO replace with regular type parameters in val
+      def mapTypeRefWithWildcard(typeRepr: TypeRepr): TypeRepr =
         typeRepr match
-          case ParamRef(bindings, idx) =>
-            TypeRepr.of[Any]
+          case ParamRef(PolyType(_, bounds, _), idx) =>
+            bounds(idx)
           case AppliedType(tycon, args) =>
-            tycon.appliedTo(args.map(mapTypeRefWithAny(_)))
+            tycon.appliedTo(args.map(mapTypeRefWithWildcard(_)))
           case _ => typeRepr
       
       val types = types0.map { typeRepr =>
-        val adjusted = mapTypeRefWithAny(typeRepr.widen)
+         // Top level wildcard tends to break here, so we extract the upper bound,
+         // Since it is top level we do not have to worry about covariance and contravariance
+        val adjusted = 
+          mapTypeRefWithWildcard(typeRepr.widen) match
+            case TypeBounds(lower, upper) => upper
+            case other => other
         adjusted.asType match
           case '[t] => TypeTree.of[t]
       }
-      
+      val (paramTypes, _) = types.map(_.tpe).toList.splitAt(types.length-1)
+
       def uniqueName(classSymbol: Symbol): Expr[String] =
         '{
           Predef.augmentString("<%s> %s%s.%s%s")
@@ -182,11 +183,7 @@ object Mocked:
                 Select.unique(
                   Apply(
                     Select.unique(Ref(valDef.symbol), "apply"),
-                    args.flatten.collect { case t: Term => TypeApply(
-                      Select.unique(t, "asInstanceOf"),
-                      mapTypeRefWithAny(t.tpe.widen).asType match
-                        case '[t] => List(TypeTree.of[t])
-                    ) }
+                    args.flatten.collect { case t: Term => t }
                   ),
                   "asInstanceOf"
                 ),
@@ -203,7 +200,7 @@ object Mocked:
         MockedMethods(tpe)
           .collectFirst { case method: MockedMethod
             if method.symbol.name == name &&
-               method.paramTypes.zip(paramTypes).forall(_ =:= _) => method.mockValName
+              paramTypes.zip(method.paramTypes).forall(_ <:< _) => method.mockValName
           }
           .get
 
